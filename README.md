@@ -1,3 +1,4 @@
+This is a test to test GitHub.
 # PSGSuite
 <div align="center">
   <img src="https://github.com/scrthq/PSGSuite/raw/master/bin/img/psgsuite2.0.0.png" alt="PSGSuite 2.0.0 released!" />
