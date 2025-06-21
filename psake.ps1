@@ -169,7 +169,7 @@ Task Generate -Depends Clean, Download {
 
                     $OutputValue = $TemplateResult[$Key]
                     @"
-# Programmatically generated from template '$RelativeTemplatePath'
+# Programmatically generated from template '$($RelativeTemplatePath.ToLower())'
 # This file will be overwritten during the module build process.
 
 $OutputValue
@@ -190,7 +190,7 @@ $OutputValue
                 }
                 
                 @"
-# Programmatically generated from template '$RelativeTemplatePath'
+# Programmatically generated from template '$($RelativeTemplatePath.ToLower())'
 # This file will be overwritten during the module build process.
 
 $TemplateResult

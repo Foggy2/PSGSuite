@@ -1,4 +1,4 @@
-# Programmatically generated from template 'Module\Aliases.ps1'
+# Programmatically generated from template 'module\aliases.ps1'
 # This file will be overwritten during the module build process.
 
 $aliasHash = #    Alias  =>  =>  =>  =>  =>  =>  =>  =>  Function
