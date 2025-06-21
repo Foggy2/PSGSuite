@@ -126,6 +126,9 @@
 - Moved the existing module initialization code out of the `Compile` task of the module build process and split into two parts:
     - The dynamic alias logic has been moved into the `templates\Module\Aliases.ps1` template file.
     - The static module initialization logic has been moved into  the `Module\Initialization.ps1` file.
+- Added `-DebugBuild` switch to `build.ps1` for improved module debugging. When built with this switch the compiled `PSGSuite.psm1` file will:
+  - Link directly to each source code file found in the `PSGSuite` directory.
+  - Export all module functions and variables to the PowerShell session.
 
 ## 3.0.0 - 2024-11-20
 
