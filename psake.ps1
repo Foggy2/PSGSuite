@@ -216,45 +216,47 @@ Task Compile -Depends Clean, Download, Generate {
         New-Item -Path $outputModVerDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
     }
 
-    # Append items to psm1
+    # Create the PSM1 using module source files
     Write-BuildLog 'Creating psm1...'
     $psm1 = Copy-Item -Path (Join-Path -Path $sut -ChildPath 'PSGSuite.psm1') -Destination (Join-Path -Path $outputModVerDir -ChildPath "$($ENV:BHProjectName).psm1") -PassThru
-
-    If (-not ($ENV:Build_Debug -eq "True")){
-        
-        # Normal build
-        # Source code will be copied into the compiled module
-        foreach ($scope in @('Class', 'Private', 'Public', 'Module')) {
+    
+    # Normal builds:
+    #  All source files will be copied directly into the PSM1 file.
+    # Debug Builds:
+    #  All Public, Private and Module source code will be dot sourced inside the PSM1 file.
+    #  Classes cannot be dot sourced within a module, so they will always be copied.
+    #  See: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_classes?view=powershell-7.5#manually-importing-classes-from-a-powershell-module
+    foreach ($scope in @('Class', 'Private', 'Public', 'Module')) {
+        If (($Scope -eq "Class") -or (-not ($ENV:Build_Debug -eq "True"))){
+            #Normal or Class
             Write-BuildLog "Copying contents from files in source folder to PSM1: $($scope)"
-            $gciPath = Join-Path $sut $scope
-            if (Test-Path $gciPath) {
-                Get-ChildItem -Path $gciPath -Filter "*.ps1" -Recurse -File | ForEach-Object {
-                    Write-BuildLog "Working on: $scope$([System.IO.Path]::DirectorySeparatorChar)$($_.FullName.Replace("$gciPath$([System.IO.Path]::DirectorySeparatorChar)",'') -replace '\.ps1$')"
+        } else  {
+            #Debug
+            Write-BuildLog "Linking files in source folder to PSM1: $($scope)"
+        }
+        
+        $gciPath = Join-Path $sut $scope
+        if (Test-Path $gciPath) {
+            Get-ChildItem -Path $gciPath -Filter "*.ps1" -Recurse -File | ForEach-Object {
+                Write-BuildLog "Working on: $scope$([System.IO.Path]::DirectorySeparatorChar)$($_.FullName.Replace("$gciPath$([System.IO.Path]::DirectorySeparatorChar)",'') -replace '\.ps1$')"
+                If (($Scope -eq "Class") -or (-not ($ENV:Build_Debug -eq "True"))){
+                    #Normal or Class
                     [System.IO.File]::AppendAllText($psm1, ("$([System.IO.File]::ReadAllText($_.FullName))`n"))
                     if ($scope -eq 'Public') {
                         $functionsToExport += $_.BaseName
                         [System.IO.File]::AppendAllText($psm1, ("Export-ModuleMember -Function '$($_.BaseName)'`n"))
                     }
-                }
-            }
-        }
-    
-    } else {
-        
-        # Debug Build
-        # The module will link directly to the .ps1 files in the source directory for convenient debugging.
-        foreach ($scope in @('Class', 'Private', 'Public', 'Module')) {
-            Write-BuildLog "Linking files in source folder to PSM1: $($scope)"
-            $gciPath = Join-Path $sut $scope
-            if (Test-Path $gciPath) {
-                Get-ChildItem -Path $gciPath -Filter "*.ps1" -Recurse -File | ForEach-Object {
-                    Write-BuildLog "Working on: $scope$([System.IO.Path]::DirectorySeparatorChar)$($_.FullName.Replace("$gciPath$([System.IO.Path]::DirectorySeparatorChar)",'') -replace '\.ps1$')"
+                } else  {
+                    #Debug
                     [System.IO.File]::AppendAllText($psm1, (". '$($_.FullName)'`n"))
                 }
+                
+                
             }
         }
+    }
+    If ($ENV:Build_Debug -eq "True"){
         [System.IO.File]::AppendAllText($psm1, ("Export-ModuleMember -Function * -Variable * -Alias *"))
-
     }
 
     Invoke-CommandWithLog { Remove-Module $env:BHProjectName -ErrorAction SilentlyContinue -Force -Verbose:$false }
